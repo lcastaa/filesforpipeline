@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  myapp:
+    build: .
+    ports:
+      - "8081:8081"
+    container_name: tenmoapp
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/tenmo
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres1
+
+  db:
+    image: postgres:12.1
+    container_name: db
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres1
+      POSTGRES_DB: tenmo
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql

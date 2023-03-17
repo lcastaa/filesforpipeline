@@ -1,0 +1,160 @@
+spin up a for free ec2 Instance in AWS
+
+next configure security group to allow the following ports:
+
+tcp 8080 through ipv4
+tcp 8080 through ipv6
+
+tcp 8081 through ipv4
+tcp 8081 through ipv6
+
+
+
+run the following commands in the terminal of the EC2 instance...
+
+
+
+updates the system and preps it to install the rest of the components..
+-----------------------------------------------------------------------
+sudo apt upgrade 
+sudo apt upgrade -y 
+
+
+
+
+installs openjdk-17 for the server
+------------------------------------
+sudo apt install openjdk-17-jdk -y
+
+
+
+
+adds the dependencies for apt and allows you to install jenkins 
+-----------------------------------------------------------------------------------------------------------------------------------
+sudo curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null && echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null && sudo apt update && sudo apt install jenkins -y
+
+
+
+refershes the apt repository
+------------------------------------
+sudo apt-get update
+sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+
+
+creates directory and adds the gpg keys to the apt repositories keyrings
+----------------------------------------------------------------------------
+sudo mkdir -m 0755 -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+
+
+
+The command adds a Docker package repository to the package manager sources list for Ubuntu by creating a file named docker.list in the /etc/apt/sources.list.d/ directory
+-----------------------------------------------------------------------------
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+
+
+
+updates the apt repository
+-------------------------
+sudo apt-get update
+
+
+
+Adds permissions to the docker.gpg file updates then installs the docker engine and adds the current user docker  
+--------------------------------------------------------------------------------------------------------------------------
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo groupadd docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+
+
+Gives you the password to log in to jenkins on ip http://<ipaddress>:8080
+--------------------------------------------------------
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+
+
+opens the sudoers file to edit
+--------------------------------
+sudo nano /etc/sudoers
+
+
+Add this line to the end of the file
+---------------------------------
+jenkins ALL=(ALL) NOPASSWD:ALL
+
+
+
+
+
+
+In your project directory in the root of it make sure you have a jenkinsfile like this:
+
+
+pipeline {
+    agent any
+
+    stages {
+
+
+        stage('Build') {
+            steps {
+                sh 'bash ./mvnw clean install -Dmaven.test.skip=true'
+            }
+        }
+
+        stage('Verify Artifact') {
+            steps {
+                script {
+                    def artifactPath = sh(
+                        script: 'ls target/*.jar',
+                        returnStdout: true
+                    ).trim()
+                    if (artifactPath.empty) {
+                        error 'Artifact not found'
+                    }
+                    echo "Artifact found at ${artifactPath}"
+                }
+            }
+        }
+
+
+        stage('Stop and Remove Previous Container ') {
+            steps {
+                script {
+                    // Check if the container is already running
+                    def containerName = "tenmoapp"
+
+                    // Stop and delete the container if it is running
+                    sh "sudo bash ./kill-and-remove-container.sh ${containerName}"
+                }
+            }
+        }
+	
+
+	   // If an Image has been been
+         stage('Remove Previous Docker Image') {
+                    steps {
+                        sh 'sudo docker rmi -f $(sudo docker images -q <name of the docker Image created>)'
+                    }
+                }
+
+        stage('Creating and Deploy Container') {
+            steps {
+                sh 'sudo docker-compose up --force-recreate -d'
+            }
+        }
+    }
+
+}
