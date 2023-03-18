@@ -1,19 +1,29 @@
 version: '3'
 
 services:
+
   myapp:
     build: .
+    
+    #Set your ports here it follows (host(8081) : container(8081))  
     ports:
       - "8081:8081"
-    container_name: tenmoapp
+      
+    #container_name is to name your container make sure this matches in the jenkins pipeline
+    container_name: YOUR_CONTAINER_NAME
+    
+    #If you are using a data base you can use this to set up the envoirment
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/tenmo
+      #if you want to change the url make sure it is the name of the database container found below followes by the port you specify.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/DATA_BASE_NAME
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres1
 
   db:
     image: postgres:12.1
+    
+    #make sure this is the same as in SPRING_DATASOURCE_URL: jdbc:postgresql://DATABASE_CONTAINER_NAME:5432/NAME_OF_DATABASE
     container_name: db
     ports:
       - "5432:5432"
@@ -21,6 +31,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres1
-      POSTGRES_DB: tenmo
+      # Set the name of the database here
+      POSTGRES_DB: NAME_OF_DATABASE
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
