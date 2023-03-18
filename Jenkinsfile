@@ -4,13 +4,13 @@ pipeline {
     stages {
 
 
-        stage('Build') {
+        stage('Building project using ./mvnw ...') {
             steps {
                 sh 'bash ./mvnw clean install -Dmaven.test.skip=true -Dspring-boot.repackage.main-class=com.techelevator.tenmo'
             }
         }
 
-        stage('Verify Artifact') {
+        stage('Checking to see if the stage prior gives executable...') {
             steps {
                 script {
                     def artifactPath = sh(
@@ -26,11 +26,11 @@ pipeline {
         }
 
 
-        stage('Stop and Remove Previous Container ') {
+        stage('Stoping and removing the previous versions container...') {
             steps {
                 script {
                     // Check if the container is already running
-                    def containerName = "tenmoapp"
+                    def containerName = "<name of container where spring is running>"
 
                     // Stop and delete the container if it is running
                     sh "sudo bash ./kill-and-remove-container.sh ${containerName}"
@@ -38,14 +38,14 @@ pipeline {
             }
         }
 
-       stage('Remove Previous Docker Image') {
+       stage('Removing previous versions docker image...') {
             steps {
-               sh 'sudo docker rmi -f $(sudo docker images -q pipe_myapp)'
+               sh 'sudo docker rmi -f $(sudo docker images -q <container image name>)'
             }
        }
 
 
-        stage('Creating and Deploy Container') {
+        stage('Creating and deploying new versions container...') {
             steps {
                 sh 'sudo docker-compose up --force-recreate -d'
             }
