@@ -6,7 +6,7 @@ pipeline {
 
         stage('Building project using ./mvnw ...') {
             steps {
-                sh 'bash ./mvnw clean install -Dmaven.test.skip=true -Dspring-boot.repackage.main-class=com.techelevator.tenmo'
+                sh 'bash ./mvnw clean install -Dmaven.test.skip=true'
             }
         }
 
